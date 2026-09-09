@@ -1,0 +1,43 @@
+name: CIL Page Tracker
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chrome
+        run: npx playwright install chromium
+
+      - name: Check CIL page
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node tracker.js
+
+      - name: Save page state
+        run: |
+          git config user.name "CIL Tracker"
+          git config user.email "cil-tracker@users.noreply.github.com"
+          git add page_state.json
+          git diff --cached --quiet || git commit -m "Update CIL page state"
+          git push
