@@ -57,12 +57,15 @@ function sendTelegram(message) {
 
   try {
     await page.goto(URL, { waitUntil: "networkidle", timeout: 60000 });
+    await page.waitForTimeout(5000);
 
     // Grab all links on the page
-    const links = await page.$$eval("a[href]", els =>
-      els.map(a => ({ text: a.innerText, href: a.href }))
-         .filter(i => i.text.trim().length > 3)
+    const links = await page.$$eval("a", els =>
+      els.map(a => ({ text: a.innerText, href: a.href || a.getAttribute("href") || "" }))
+      .filter(i => i.text.trim().length > 3 && i.href.startsWith("http"))
     );
+    console.log("Total links found:", links.length);
+    console.log(JSON.stringify(links.slice(0, 10), null, 2));
 
     const current = normalize(links);
 
