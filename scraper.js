@@ -61,7 +61,7 @@ function sendTelegram(message) {
     // Grab all links on the page
     const links = await page.$$eval("a[href]", els =>
       els.map(a => ({ text: a.innerText, href: a.href }))
-         .filter(i => i.href.includes(".pdf") || i.href.includes("notice") || i.href.includes("result") || i.href.includes("admit"))
+         .filter(i => i.text.trim().length > 3)
     );
 
     const current = normalize(links);
