@@ -1,46 +1,41 @@
-name: CIL Page Tracker
+name: CIL Tracker
 
 on:
-  push:
-    branches:
-      - master
   schedule:
-    - cron: "*/10 * * * *"
-  workflow_dispatch:
-
-permissions:
-  contents: write
+    - cron: "*/5 * * * *"   # Every 30 minutes
+  workflow_dispatch:           # Manual trigger anytime
 
 jobs:
   check:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
-          cache: npm
+          node-version: "20"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install && npx playwright install chromium --with-deps
 
-      - name: Install Playwright Chrome
-        run: npx playwright install chromium
+      - name: Restore state
+        uses: actions/cache@v4
+        with:
+          path: state.json
+          key: cil-state-${{ github.run_id }}
+          restore-keys: cil-state-
 
-      - name: Check CIL page
+      - name: Run scraper
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: node tracker.js
+        run: node scraper.js
 
-      - name: Save page state
-        run: |
-          git config user.name "CIL Tracker"
-          git config user.email "cil-tracker@users.noreply.github.com"
-          git add page_state.json
-          git diff --cached --quiet || git commit -m "Update CIL page state"
-          git push
+      - name: Save state
+        uses: actions/cache@v4
+        with:
+          path: state.json
+          key: cil-state-${{ github.run_id }}
